@@ -1,0 +1,199 @@
+diff --git a/index.html b/index.html
+index dd8ffc9..285bb17 100644
+--- a/index.html
++++ b/index.html
+@@ -426,6 +426,14 @@ form.sent .form-ok{display:block}
+ .b-form .btn{height:62px;margin-bottom:6px}
+ .b-form .form-ok{grid-column:1/-1;margin-top:18px}
+ 
++/* ---------- PHONE VIDEO MODE ---------- */
++.hero.vmode{height:100vh;height:100svh}
++.hero.vmode .film-load,.hero.vmode .hud-cue{display:none}
++.hero.vmode .hero-bar.seg i:nth-child(5){display:none}
++.film-play{position:absolute;left:50%;top:50%;z-index:3;width:84px;height:84px;margin:-42px 0 0 -42px;border-radius:50%;border:1px solid rgba(255,255,255,.55);background:rgba(10,10,11,.35);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#fff;display:none;align-items:center;justify-content:center}
++.film-play svg{width:26px;height:26px;margin-left:4px}
++.hero.blocked .film-play{display:flex}
++
+ /* ---------- RESPONSIVE ---------- */
+ @media (max-width:1180px){
+   .nav{gap:28px}
+@@ -607,6 +615,7 @@ form.sent .form-ok{display:block}
+         <a class="link-arrow" href="#/car/laferrari-aperta">לעמוד הרכב <span class="arr">←</span></a>
+       </div>
+       <div class="hero-bar"><i id="heroBar"></i></div>
++      <button class="film-play" type="button" aria-label="הפעלת הסרט"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg></button>
+       <div class="film-load" aria-hidden="true">טוען <b>0%</b></div>
+     </div>
+   </section>
+@@ -859,10 +868,11 @@ form.sent .form-ok{display:block}
+       <div class="hero-tag">
+         <span class="eyebrow">המוסך של ORBITA</span>
+         <strong>RANGE ROVER</strong>
+-        <span class="meta">נפתח, נבדק ונבנה מחדש · 160 נקודות בדיקה</span>
++        <span class="meta">160 נקודות בדיקה · דוח מצולם לכל עבודה</span>
+         <a class="link-arrow" href="#/workshop/book">תיאום טיפול <span class="arr">←</span></a>
+       </div>
+       <div class="hero-bar seg" aria-hidden="true"><i><b></b></i><i><b></b></i><i><b></b></i><i><b></b></i><i><b></b></i></div>
++      <button class="film-play" type="button" aria-label="הפעלת הסרט"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg></button>
+       <div class="film-load" aria-hidden="true">טוען <b>0%</b></div>
+     </div>
+   </section>
+@@ -1254,18 +1264,24 @@ function parTick(){
+    {a,b} plays frames a->b (b<a plays backwards), {hold} parks on the last frame.
+    Scroll inside a segment is spread by the film's measured motion, so movement
+    per centimetre of scroll stays even and the pace follows the finger. */
++/* Phones and tablets play each film as a calm video; computers scrub it with the scroll. */
++var VMODE=!!(window.matchMedia&&matchMedia('(hover: none) and (pointer: coarse)').matches);
+ function Film(el,cfg){
+   this.el=el;this.cfg=cfg;this.v=el.querySelector('video');
+   this.map=cfg.map;this.nf=cfg.map.length-1;this.fps=cfg.fps;this.dur=this.nf/cfg.fps;
+   this.t=0;this.ready=false;this.loading=false;this.portrait=false;this.z0=1;this.w=0;this.segs=[];this.total=1;this.barCache='';
+   this.v.poster=IMG[cfg.poster];
+   this.el.classList.add('wait');
++  this.vmode=VMODE;if(VMODE)el.classList.add('vmode');
++  var self=this,pb=el.querySelector('.film-play');
++  if(pb)pb.addEventListener('click',function(e){e.preventDefault();self.vplay()});
++  if(VMODE)el.querySelector('.hero-sticky').addEventListener('click',function(e){if(e.target.closest('a,button'))return;if(self.v.ended||el.classList.contains('blocked'))self.vplay()});
+ }
+ Film.prototype.layout=function(){
+   var vw=innerWidth,vh=innerHeight,portrait=vw/vh<1.05,tot=0;
+   this.portrait=portrait;this.el.classList.toggle('portrait',portrait);
+   this.segs=this.cfg.segs.map(function(s){var len=portrait&&s.vhP?s.vhP:s.vh;var o={a:s.a,b:s.b,hold:!!s.hold,len:len,start:tot};tot+=len;return o});
+-  this.total=tot;this.el.style.height='calc('+(tot+100)+' * 1vh)';
++  this.total=tot;this.el.style.height=this.vmode?'':'calc('+(tot+100)+' * 1vh)';
+   this.w=vw;this.z0=Math.max(1,vh/(vw*9/16));
+   if(!portrait)this.v.style.transform='';
+ };
+@@ -1290,12 +1306,14 @@ Film.prototype.state=function(p){
+ Film.prototype.scrollPx=function(){return this.total/100*innerHeight};
+ Film.prototype.active=function(){return !!this.el.offsetParent};
+ Film.prototype.tick=function(dt){
++  if(this.vmode)return this.vtick(dt);
+   var r=this.el.getBoundingClientRect(),vh=innerHeight,total=r.height-vh;
+   if(r.bottom<-10||r.top>vh)return;
+   var p=clamp(-r.top/total,0,1),st=this.state(p);
+   var target=st.f/this.fps,k=1-Math.pow(1-.14,dt*60);
+   this.t+=(target-this.t)*k;if(Math.abs(target-this.t)<.0004)this.t=target;
+   var v=this.v;
++  if(!v.paused)v.pause();
+   if(this.ready){var tt=Math.min(this.t,this.dur-.045);if(!v.seeking&&Math.abs(v.currentTime-tt)>.006)v.currentTime=tt}
+   else this.checkReady();
+   var f=this.t*this.fps;
+@@ -1306,15 +1324,20 @@ Film.prototype.tick=function(dt){
+     v.style.transform='translate3d('+tx.toFixed(1)+'px,-50%,0) scale('+z.toFixed(4)+')';
+   }
+ };
+-Film.prototype.unlock=function(){var v=this.v,self=this;if(this.unlocked||!v.getAttribute('src'))return;try{var pp=v.play();if(pp&&pp.then)pp.then(function(){self.unlocked=true;v.pause();try{v.currentTime=Math.min(self.t,self.dur-.045)}catch(e){}}).catch(function(){});else{v.pause();self.unlocked=true}}catch(e){}};
+-Film.prototype.checkReady=function(){if(this.ready)return;var v=this.v;if(!(v.readyState>=1))return;this.ready=true;this.el.classList.remove('wait');if(isFinite(v.duration)&&v.duration>0)this.dur=v.duration;this.unlock();if(this.onReady){var cb=this.onReady;this.onReady=null;cb()}};
++Film.prototype.checkReady=function(){
++  if(this.ready)return;var v=this.v;
++  if(!(v.readyState>=1))return;
++  this.ready=true;this.el.classList.remove('wait');
++  if(isFinite(v.duration)&&v.duration>0)this.dur=v.duration;
++  if(this.onReady){var cb=this.onReady;this.onReady=null;cb()}
++};
+ Film.prototype.load=function(onPct,onReady){
+   if(this.loading){if(onReady){if(this.ready)onReady();else this.onReady=onReady}return}
+   this.loading=true;this.onReady=onReady||null;
+   var self=this,v=this.v,src=this.cfg.src,lab=$('.film-load b',this.el);
+   var pct=function(p){if(lab)lab.textContent=Math.round(p*100)+'%';if(onPct)onPct(p)};
+   v.muted=true;v.playsInline=true;
+-  var bind=function(){['loadedmetadata','loadeddata','canplay','canplaythrough'].forEach(function(e){v.addEventListener(e,function(){self.checkReady()})});self.checkReady();self.unlock();setTimeout(function(){if(!self.ready&&self.onReady){var cb=self.onReady;self.onReady=null;cb()}},2500)};
++  var bind=function(){['loadedmetadata','loadeddata','canplay','canplaythrough'].forEach(function(e){v.addEventListener(e,function(){self.checkReady()})});self.checkReady();setTimeout(function(){if(!self.ready&&self.onReady){var cb=self.onReady;self.onReady=null;cb()}},2500)};
+   var direct=function(){v.src=src;v.load();bind();var fake=0,iv=setInterval(function(){if(self.ready){clearInterval(iv);return}fake=Math.min(.92,fake+.04);pct(fake)},140)};
+   if(location.protocol==='file:'||!window.fetch||!window.ReadableStream){direct();return}
+   fetch(src).then(function(res){
+@@ -1328,6 +1351,31 @@ Film.prototype.load=function(onPct,onReady){
+   }).catch(direct);
+ };
+ 
++Film.prototype.vplay=function(){
++  var v=this.v,self=this,rate=this.cfg.rate||1;
++  if(!v.getAttribute('src')){v.src=this.cfg.src;v.preload='auto';v.load()}
++  this.endT=0;this.el.classList.remove('blocked','landed');
++  try{v.currentTime=0}catch(e){}
++  v.defaultPlaybackRate=rate;v.playbackRate=rate;
++  var pp=v.play();
++  if(pp&&pp.then)pp.then(function(){v.playbackRate=rate;self.el.classList.remove('blocked')}).catch(function(){self.el.classList.add('blocked')});
++};
++Film.prototype.vtick=function(dt){
++  var r=this.el.getBoundingClientRect(),v=this.v;
++  if(r.bottom<-10||r.top>innerHeight)return;
++  if(!this.ready)this.checkReady();
++  var t=v.currentTime||0,f=Math.min(this.nf,t*this.fps),ended=v.ended||f>=this.nf-.6;
++  this.endT=ended?(this.endT||0)+dt:0;
++  var st=ended?{f:this.nf,i:1,q:clamp(this.endT/1.4,0,1),v:1}:{f:f,i:0,q:f/this.nf,v:1};
++  this.t=st.f/this.fps;
++  this.el.classList.toggle('moving',t>.05||ended);
++  this.cfg.hud(this,st.f,st,0);
++  if(this.portrait){
++    var z=this.cfg.zoom(this,st.f,st),fx=this.cfg.focus?this.cfg.focus(st.f):.5,tx=(.5-fx)*this.w*z*clamp((z-1)/Math.max(.001,this.z0-1),0,1);
++    v.style.transform='translate3d('+tx.toFixed(1)+'px,-50%,0) scale('+z.toFixed(4)+')';
++  }
++};
++
+ /* --- the home film: from orbit down to the car --- */
+ var ALT=[[0,408000],[.9,70000],[1.6,9000],[2.4,3100],[3.2,1200],[4.2,380],[5.2,70],[6.2,11],[7.2,2.6],[8.2,1.3],[10.1,1.2]];
+ function altAt(t){for(var i=1;i<ALT.length;i++){if(t<=ALT[i][0]){var a=ALT[i-1],b=ALT[i],k=(t-a[0])/(b[0]-a[0]);return Math.exp(lerp(Math.log(a[1]),Math.log(b[1]),k))}}return ALT[ALT.length-1][1]}
+@@ -1337,7 +1385,7 @@ var FOC=[[0,.5],[5.4,.5],[6.4,.44],[8.2,.47],[10.1,.47]];
+ function focAt(t){for(var i=1;i<FOC.length;i++){if(t<=FOC[i][0]){var a=FOC[i-1],b=FOC[i];return lerp(a[1],b[1],(t-a[0])/(b[0]-a[0]))}}return .47}
+ var homeUI={alt:$('#alt'),coord:$('#coord'),bar:$('#heroBar'),last:''};
+ var HOME=new Film($('#hero'),{
+-  src:'orbita_hero2.mp4',map:[0.0, 0.0044, 0.0091, 0.014, 0.0191, 0.0246, 0.0303, 0.0363, 0.0426, 0.0492, 0.056, 0.063, 0.07, 0.0772, 0.0844, 0.0917, 0.099, 0.1062, 0.1135, 0.1207, 0.128, 0.1353, 0.1425, 0.1498, 0.1571, 0.1643, 0.1713, 0.1779, 0.1841, 0.1899, 0.1952, 0.2001, 0.2046, 0.2087, 0.2124, 0.2156, 0.2184, 0.2211, 0.2237, 0.2264, 0.229, 0.2317, 0.2343, 0.237, 0.2397, 0.2424, 0.2451, 0.2479, 0.2508, 0.2537, 0.2567, 0.2597, 0.2627, 0.2657, 0.2688, 0.2718, 0.2749, 0.2779, 0.2809, 0.2838, 0.2866, 0.2895, 0.2923, 0.2951, 0.2979, 0.3007, 0.3035, 0.3064, 0.3092, 0.3121, 0.315, 0.3179, 0.3209, 0.3239, 0.327, 0.3301, 0.3333, 0.3366, 0.34, 0.3435, 0.3472, 0.3511, 0.3552, 0.3596, 0.3643, 0.3694, 0.3748, 0.3804, 0.3863, 0.3925, 0.3989, 0.4056, 0.4124, 0.4194, 0.4264, 0.4335, 0.4406, 0.4477, 0.455, 0.4622, 0.4695, 0.4767, 0.4839, 0.491, 0.4981, 0.5052, 0.5121, 0.5188, 0.5253, 0.5316, 0.5376, 0.5434, 0.5489, 0.5542, 0.5593, 0.5641, 0.5687, 0.5733, 0.5778, 0.5823, 0.5868, 0.5915, 0.5962, 0.6009, 0.6058, 0.6108, 0.616, 0.6213, 0.6267, 0.6322, 0.6376, 0.6429, 0.648, 0.6529, 0.6577, 0.6622, 0.6666, 0.6707, 0.6746, 0.6783, 0.6818, 0.6853, 0.6888, 0.6922, 0.6956, 0.6991, 0.7026, 0.7061, 0.7096, 0.713, 0.7165, 0.72, 0.7234, 0.727, 0.7305, 0.7341, 0.7376, 0.7413, 0.745, 0.7488, 0.7525, 0.7564, 0.7602, 0.7641, 0.7679, 0.7718, 0.7757, 0.7796, 0.7833, 0.7871, 0.7909, 0.7947, 0.7983, 0.8019, 0.8056, 0.8092, 0.8126, 0.8161, 0.8196, 0.8231, 0.8265, 0.8299, 0.8332, 0.8366, 0.8399, 0.8433, 0.8466, 0.8499, 0.8532, 0.8565, 0.8598, 0.8631, 0.8664, 0.8698, 0.8731, 0.8764, 0.8797, 0.883, 0.8862, 0.8894, 0.8925, 0.8956, 0.8986, 0.9015, 0.9044, 0.9073, 0.91, 0.9127, 0.9154, 0.918, 0.9207, 0.9233, 0.9259, 0.9286, 0.9312, 0.9339, 0.9365, 0.9392, 0.9418, 0.9445, 0.9471, 0.9498, 0.9524, 0.955, 0.9577, 0.9603, 0.963, 0.9656, 0.9683, 0.9709, 0.9736, 0.9762, 0.9788, 0.9815, 0.9841, 0.9868, 0.9894, 0.9921, 0.9947, 0.9974, 1.0],fps:24,poster:'earth',autoSec:13,
++  src:'orbita_hero2.mp4',map:[0.0, 0.0044, 0.0091, 0.014, 0.0191, 0.0246, 0.0303, 0.0363, 0.0426, 0.0492, 0.056, 0.063, 0.07, 0.0772, 0.0844, 0.0917, 0.099, 0.1062, 0.1135, 0.1207, 0.128, 0.1353, 0.1425, 0.1498, 0.1571, 0.1643, 0.1713, 0.1779, 0.1841, 0.1899, 0.1952, 0.2001, 0.2046, 0.2087, 0.2124, 0.2156, 0.2184, 0.2211, 0.2237, 0.2264, 0.229, 0.2317, 0.2343, 0.237, 0.2397, 0.2424, 0.2451, 0.2479, 0.2508, 0.2537, 0.2567, 0.2597, 0.2627, 0.2657, 0.2688, 0.2718, 0.2749, 0.2779, 0.2809, 0.2838, 0.2866, 0.2895, 0.2923, 0.2951, 0.2979, 0.3007, 0.3035, 0.3064, 0.3092, 0.3121, 0.315, 0.3179, 0.3209, 0.3239, 0.327, 0.3301, 0.3333, 0.3366, 0.34, 0.3435, 0.3472, 0.3511, 0.3552, 0.3596, 0.3643, 0.3694, 0.3748, 0.3804, 0.3863, 0.3925, 0.3989, 0.4056, 0.4124, 0.4194, 0.4264, 0.4335, 0.4406, 0.4477, 0.455, 0.4622, 0.4695, 0.4767, 0.4839, 0.491, 0.4981, 0.5052, 0.5121, 0.5188, 0.5253, 0.5316, 0.5376, 0.5434, 0.5489, 0.5542, 0.5593, 0.5641, 0.5687, 0.5733, 0.5778, 0.5823, 0.5868, 0.5915, 0.5962, 0.6009, 0.6058, 0.6108, 0.616, 0.6213, 0.6267, 0.6322, 0.6376, 0.6429, 0.648, 0.6529, 0.6577, 0.6622, 0.6666, 0.6707, 0.6746, 0.6783, 0.6818, 0.6853, 0.6888, 0.6922, 0.6956, 0.6991, 0.7026, 0.7061, 0.7096, 0.713, 0.7165, 0.72, 0.7234, 0.727, 0.7305, 0.7341, 0.7376, 0.7413, 0.745, 0.7488, 0.7525, 0.7564, 0.7602, 0.7641, 0.7679, 0.7718, 0.7757, 0.7796, 0.7833, 0.7871, 0.7909, 0.7947, 0.7983, 0.8019, 0.8056, 0.8092, 0.8126, 0.8161, 0.8196, 0.8231, 0.8265, 0.8299, 0.8332, 0.8366, 0.8399, 0.8433, 0.8466, 0.8499, 0.8532, 0.8565, 0.8598, 0.8631, 0.8664, 0.8698, 0.8731, 0.8764, 0.8797, 0.883, 0.8862, 0.8894, 0.8925, 0.8956, 0.8986, 0.9015, 0.9044, 0.9073, 0.91, 0.9127, 0.9154, 0.918, 0.9207, 0.9233, 0.9259, 0.9286, 0.9312, 0.9339, 0.9365, 0.9392, 0.9418, 0.9445, 0.9471, 0.9498, 0.9524, 0.955, 0.9577, 0.9603, 0.963, 0.9656, 0.9683, 0.9709, 0.9736, 0.9762, 0.9788, 0.9815, 0.9841, 0.9868, 0.9894, 0.9921, 0.9947, 0.9974, 1.0],fps:24,poster:'earth',autoSec:13,rate:.75,
+   segs:[{a:0,b:240,vh:480,vhP:520},{hold:1,vh:70,vhP:120}],
+   hud:function(F,f,st,p){
+     var t=f/24,a=altAt(t),txt=fmtAlt(a);
+@@ -1357,7 +1405,7 @@ var WS_VF=[[0,.26],[60,.34],[120,.5],[150,.58],[175,.72],[200,.8],[365,.8]];
+ function vfAt(f){for(var i=1;i<WS_VF.length;i++){if(f<=WS_VF[i][0]){var a=WS_VF[i-1],b=WS_VF[i];return lerp(a[1],b[1],(f-a[0])/(b[0]-a[0]))}}return .8}
+ var wsUI={pts:$('#wsPts'),stage:$('#wsStage'),bars:$$('#wsHero .hero-bar.seg b'),last:'',lastS:''};
+ var WORK=new Film($('#wsHero'),{
+-  src:'orbita_workshop2.mp4',map:[0.0, 0.0018, 0.0036, 0.0054, 0.0073, 0.0091, 0.0109, 0.0127, 0.0145, 0.0163, 0.0182, 0.02, 0.0218, 0.0236, 0.0254, 0.0272, 0.0291, 0.0309, 0.0327, 0.0345, 0.0364, 0.0382, 0.0401, 0.0419, 0.0438, 0.0457, 0.0476, 0.0495, 0.0514, 0.0533, 0.0552, 0.0572, 0.0592, 0.0611, 0.0632, 0.0652, 0.0672, 0.0692, 0.0714, 0.0734, 0.0755, 0.0775, 0.0797, 0.0817, 0.0838, 0.0859, 0.0881, 0.0903, 0.0924, 0.0945, 0.0967, 0.0989, 0.101, 0.1032, 0.1054, 0.1076, 0.1097, 0.1119, 0.1143, 0.1165, 0.1187, 0.1209, 0.1232, 0.1254, 0.1276, 0.1298, 0.1321, 0.1342, 0.1365, 0.1388, 0.1411, 0.1432, 0.1454, 0.1475, 0.1497, 0.1518, 0.1539, 0.1557, 0.1577, 0.1597, 0.1618, 0.1638, 0.166, 0.1682, 0.1704, 0.1726, 0.1749, 0.1773, 0.1795, 0.1819, 0.1843, 0.1868, 0.1891, 0.1916, 0.1941, 0.1967, 0.1992, 0.2017, 0.2044, 0.2071, 0.2097, 0.2123, 0.2151, 0.2179, 0.2205, 0.2231, 0.226, 0.2287, 0.2313, 0.2339, 0.2367, 0.2392, 0.2419, 0.2445, 0.2473, 0.2497, 0.2523, 0.2549, 0.2576, 0.2601, 0.2627, 0.2652, 0.2678, 0.2702, 0.2726, 0.2749, 0.2774, 0.2796, 0.2819, 0.2841, 0.2863, 0.2883, 0.2904, 0.2924, 0.2944, 0.2963, 0.2981, 0.3, 0.302, 0.3041, 0.3063, 0.3086, 0.3109, 0.3131, 0.3154, 0.3177, 0.3199, 0.322, 0.324, 0.3258, 0.3278, 0.3297, 0.3317, 0.3337, 0.3359, 0.3381, 0.3403, 0.3425, 0.3448, 0.347, 0.3492, 0.3514, 0.3535, 0.3557, 0.3577, 0.3598, 0.3619, 0.364, 0.3661, 0.3682, 0.3703, 0.3725, 0.3747, 0.3769, 0.3791, 0.3815, 0.384, 0.3865, 0.3891, 0.3918, 0.3946, 0.3973, 0.4002, 0.4032, 0.4062, 0.4091, 0.4122, 0.4153, 0.4183, 0.4214, 0.4245, 0.4277, 0.4307, 0.4337, 0.4369, 0.4398, 0.4427, 0.4455, 0.4484, 0.4511, 0.4537, 0.4563, 0.4589, 0.4612, 0.4636, 0.4659, 0.4682, 0.4702, 0.4723, 0.4743, 0.4763, 0.4781, 0.48, 0.4819, 0.4837, 0.4855, 0.4873, 0.4892, 0.491, 0.4928, 0.4946, 0.4964, 0.4982, 0.5, 0.5019, 0.5037, 0.5055, 0.5073, 0.5091, 0.5109, 0.5128, 0.5146, 0.5164, 0.5182, 0.52, 0.5218, 0.524, 0.5262, 0.5287, 0.5313, 0.5339, 0.5366, 0.5396, 0.5428, 0.5462, 0.5492, 0.5526, 0.556, 0.5595, 0.5633, 0.5673, 0.5713, 0.5755, 0.5798, 0.5844, 0.5888, 0.5934, 0.5979, 0.6026, 0.6071, 0.6116, 0.6161, 0.6205, 0.6247, 0.6289, 0.6328, 0.6368, 0.6408, 0.6446, 0.6481, 0.6517, 0.6552, 0.659, 0.6628, 0.6668, 0.6706, 0.6744, 0.6783, 0.6825, 0.6865, 0.6903, 0.6942, 0.698, 0.7014, 0.7047, 0.7079, 0.7109, 0.7137, 0.7164, 0.7189, 0.7212, 0.7238, 0.7264, 0.7289, 0.7312, 0.7336, 0.7359, 0.7383, 0.7406, 0.7429, 0.7449, 0.747, 0.7493, 0.7516, 0.7539, 0.7563, 0.759, 0.7617, 0.7645, 0.7674, 0.7706, 0.7737, 0.777, 0.7805, 0.7841, 0.7877, 0.7915, 0.7952, 0.7993, 0.803, 0.8068, 0.8107, 0.8148, 0.819, 0.8228, 0.8268, 0.8309, 0.8349, 0.8392, 0.8431, 0.8472, 0.8511, 0.855, 0.8592, 0.8634, 0.8676, 0.872, 0.8762, 0.8807, 0.8853, 0.8899, 0.8944, 0.8989, 0.9035, 0.908, 0.9127, 0.9174, 0.9218, 0.9262, 0.9307, 0.9353, 0.9399, 0.9442, 0.9485, 0.9528, 0.9569, 0.9614, 0.9658, 0.9703, 0.9746, 0.9786, 0.983, 0.9872, 0.9915, 0.9958, 1.0],fps:24,poster:'ws_hall',autoSec:27,
++  src:'orbita_workshop2.mp4',map:[0.0, 0.0018, 0.0036, 0.0054, 0.0073, 0.0091, 0.0109, 0.0127, 0.0145, 0.0163, 0.0182, 0.02, 0.0218, 0.0236, 0.0254, 0.0272, 0.0291, 0.0309, 0.0327, 0.0345, 0.0364, 0.0382, 0.0401, 0.0419, 0.0438, 0.0457, 0.0476, 0.0495, 0.0514, 0.0533, 0.0552, 0.0572, 0.0592, 0.0611, 0.0632, 0.0652, 0.0672, 0.0692, 0.0714, 0.0734, 0.0755, 0.0775, 0.0797, 0.0817, 0.0838, 0.0859, 0.0881, 0.0903, 0.0924, 0.0945, 0.0967, 0.0989, 0.101, 0.1032, 0.1054, 0.1076, 0.1097, 0.1119, 0.1143, 0.1165, 0.1187, 0.1209, 0.1232, 0.1254, 0.1276, 0.1298, 0.1321, 0.1342, 0.1365, 0.1388, 0.1411, 0.1432, 0.1454, 0.1475, 0.1497, 0.1518, 0.1539, 0.1557, 0.1577, 0.1597, 0.1618, 0.1638, 0.166, 0.1682, 0.1704, 0.1726, 0.1749, 0.1773, 0.1795, 0.1819, 0.1843, 0.1868, 0.1891, 0.1916, 0.1941, 0.1967, 0.1992, 0.2017, 0.2044, 0.2071, 0.2097, 0.2123, 0.2151, 0.2179, 0.2205, 0.2231, 0.226, 0.2287, 0.2313, 0.2339, 0.2367, 0.2392, 0.2419, 0.2445, 0.2473, 0.2497, 0.2523, 0.2549, 0.2576, 0.2601, 0.2627, 0.2652, 0.2678, 0.2702, 0.2726, 0.2749, 0.2774, 0.2796, 0.2819, 0.2841, 0.2863, 0.2883, 0.2904, 0.2924, 0.2944, 0.2963, 0.2981, 0.3, 0.302, 0.3041, 0.3063, 0.3086, 0.3109, 0.3131, 0.3154, 0.3177, 0.3199, 0.322, 0.324, 0.3258, 0.3278, 0.3297, 0.3317, 0.3337, 0.3359, 0.3381, 0.3403, 0.3425, 0.3448, 0.347, 0.3492, 0.3514, 0.3535, 0.3557, 0.3577, 0.3598, 0.3619, 0.364, 0.3661, 0.3682, 0.3703, 0.3725, 0.3747, 0.3769, 0.3791, 0.3815, 0.384, 0.3865, 0.3891, 0.3918, 0.3946, 0.3973, 0.4002, 0.4032, 0.4062, 0.4091, 0.4122, 0.4153, 0.4183, 0.4214, 0.4245, 0.4277, 0.4307, 0.4337, 0.4369, 0.4398, 0.4427, 0.4455, 0.4484, 0.4511, 0.4537, 0.4563, 0.4589, 0.4612, 0.4636, 0.4659, 0.4682, 0.4702, 0.4723, 0.4743, 0.4763, 0.4781, 0.48, 0.4819, 0.4837, 0.4855, 0.4873, 0.4892, 0.491, 0.4928, 0.4946, 0.4964, 0.4982, 0.5, 0.5019, 0.5037, 0.5055, 0.5073, 0.5091, 0.5109, 0.5128, 0.5146, 0.5164, 0.5182, 0.52, 0.5218, 0.524, 0.5262, 0.5287, 0.5313, 0.5339, 0.5366, 0.5396, 0.5428, 0.5462, 0.5492, 0.5526, 0.556, 0.5595, 0.5633, 0.5673, 0.5713, 0.5755, 0.5798, 0.5844, 0.5888, 0.5934, 0.5979, 0.6026, 0.6071, 0.6116, 0.6161, 0.6205, 0.6247, 0.6289, 0.6328, 0.6368, 0.6408, 0.6446, 0.6481, 0.6517, 0.6552, 0.659, 0.6628, 0.6668, 0.6706, 0.6744, 0.6783, 0.6825, 0.6865, 0.6903, 0.6942, 0.698, 0.7014, 0.7047, 0.7079, 0.7109, 0.7137, 0.7164, 0.7189, 0.7212, 0.7238, 0.7264, 0.7289, 0.7312, 0.7336, 0.7359, 0.7383, 0.7406, 0.7429, 0.7449, 0.747, 0.7493, 0.7516, 0.7539, 0.7563, 0.759, 0.7617, 0.7645, 0.7674, 0.7706, 0.7737, 0.777, 0.7805, 0.7841, 0.7877, 0.7915, 0.7952, 0.7993, 0.803, 0.8068, 0.8107, 0.8148, 0.819, 0.8228, 0.8268, 0.8309, 0.8349, 0.8392, 0.8431, 0.8472, 0.8511, 0.855, 0.8592, 0.8634, 0.8676, 0.872, 0.8762, 0.8807, 0.8853, 0.8899, 0.8944, 0.8989, 0.9035, 0.908, 0.9127, 0.9174, 0.9218, 0.9262, 0.9307, 0.9353, 0.9399, 0.9442, 0.9485, 0.9528, 0.9569, 0.9614, 0.9658, 0.9703, 0.9746, 0.9786, 0.983, 0.9872, 0.9915, 0.9958, 1.0],fps:24,poster:'ws_hall',autoSec:27,rate:1,
+   segs:[{a:0,b:365,vh:560,vhP:600},{hold:1,vh:60,vhP:70},{a:365,b:150,vh:280,vhP:300},{hold:1,vh:70,vhP:110}],
+   hud:function(F,f,st,p){
+     var fills=[0,0,0,0,0],label,pts;
+@@ -1371,7 +1419,7 @@ var WORK=new Film($('#wsHero'),{
+     var ltxt=st.i===3?label:'שלב '+label;
+     if(ltxt!==wsUI.lastS){wsUI.lastS=ltxt;wsUI.stage.textContent=ltxt}
+     for(var j=0;j<5;j++)wsUI.bars[j].style.transform='scaleX('+fills[j].toFixed(4)+')';
+-    F.el.classList.toggle('landed',st.i===3||(st.i===2&&st.q>.97));
++    F.el.classList.toggle('landed',st.i===3||(st.i===2&&st.q>.97)||(st.v&&st.i===1&&st.q>=1));
+   },
+   zoom:function(F,f,st){return clamp(1/vfAt(f),1,F.z0)}
+ });
+@@ -1402,7 +1450,8 @@ function show(r){
+   document.title=TITLES[r.page]||TITLES.home;
+   cur=r;
+   var F=filmOf(r.page);
+-  if(F){F.layout();if(!F.loading)F.load()}
++  [HOME,WORK].forEach(function(o){if(o!==F&&!o.v.paused)o.v.pause()});
++  if(F){F.layout();if(F.vmode){if(booted)setTimeout(function(){if(cur&&filmOf(cur.page)===F)F.vplay()},1000)}else if(!F.loading)F.load()}
+   window.scrollTo(0,0);
+   if(r.sub)setTimeout(function(){toAnchor(r.sub,false)},60);
+   hdrState(true);
+@@ -1550,17 +1599,19 @@ window.addEventListener('resize',function(){HOME.layout();WORK.layout()});
+ window.addEventListener('scroll',function(){hdrState(false)},{passive:true});
+ 
+ /* ---------------- boot ---------------- */
+-var GESTURES=['touchend','pointerdown','click','keydown'];
+-function unlockAll(){var done=true;[HOME,WORK].forEach(function(F){F.unlock();if(!F.unlocked)done=false});if(done)GESTURES.forEach(function(e){window.removeEventListener(e,unlockAll,true)})}
+-GESTURES.forEach(function(e){window.addEventListener(e,unlockAll,true)});
++var booted=false;
+ var first=parse(),firstFilm=filmOf(first.page);
+ HOME.layout();WORK.layout();
+-if(firstFilm){
++if(VMODE){
++  if(firstFilm){firstFilm.v.src=firstFilm.cfg.src;firstFilm.v.preload='auto';firstFilm.v.load()}
++  var fk=0,fiv=setInterval(function(){fk=Math.min(1,fk+.09);setPct(fk);if(fk>=1){clearInterval(fiv);finishLoader();if(firstFilm)setTimeout(function(){if(cur&&filmOf(cur.page)===firstFilm)firstFilm.vplay()},350)}},90);
++}else if(firstFilm){
+   firstFilm.load(setPct,function(){finishLoader();loadRest()});
+   setTimeout(finishLoader,16000);
+ }
+ show(first);
+-if(!firstFilm){finishLoader();loadRest()}
++if(!VMODE&&!firstFilm){finishLoader();loadRest()}
++booted=true;
+ requestAnimationFrame(loop);
+ })();
+ 
