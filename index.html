@@ -1519,7 +1519,7 @@ var autoOn=false,autoY=0,tour=null;
 function speedNow(){
   var F=cur&&filmOf(cur.page),vh=innerHeight,base=HOME.scrollPx()/HOME.cfg.autoSec;
   if(F&&scrollY<F.el.offsetHeight-vh)return F.scrollPx()/F.cfg.autoSec;
-  return Math.min(base,vh*.34);
+  return Math.min(base,vh*.41);
 }
 function startAuto(){autoOn=true;autoY=scrollY;hdr.classList.remove('hide')}
 function stopAuto(){autoOn=false;tour=null}
@@ -1550,7 +1550,7 @@ window.addEventListener('keydown',function(e){
   if(e.code==='KeyA'){if(autoOn&&!tour)stopAuto();else{tour=null;startAuto()}}
   else if(e.code==='KeyT'){
     if(tour){stopAuto();return}
-    tour={seq:['#/','#/car/laferrari-aperta','#/cars','#/workshop','#/services','#/contact'],i:0,wait:.4};
+    tour={seq:['#/','#/workshop','#/car/laferrari-aperta','#/cars','#/services','#/contact'],i:0,wait:.4};
     if(cur.page!=='home'){location.hash='#/';tour.wait=1.6}else window.scrollTo(0,0);
     startAuto();autoY=0;
   }else if(autoOn&&['ArrowDown','ArrowUp','PageDown','PageUp','Space','Home','End'].indexOf(e.code)>-1)stopAuto();
