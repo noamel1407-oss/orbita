@@ -148,7 +148,7 @@ body.menu-open .menu{clip-path:inset(0 0 0 0);visibility:visible}
 .hero-bar i{position:absolute;inset:0;background:rgba(255,255,255,.85);transform-origin:right;transform:scaleX(0)}
 
 /* ---------- INTRO ---------- */
-.intro{padding-block:clamp(110px,13vw,230px) clamp(90px,9vw,160px)}
+.intro{padding-block:clamp(110px,13vw,230px) clamp(90px,9vw,160px)}.bridge{min-height:58vh;display:flex;flex-direction:column;justify-content:center;padding-block:clamp(70px,10vh,150px)}.bridge-title{margin:26px 0 0;font-size:clamp(40px,6.6vw,124px)}
 .intro-title{margin-top:30px;font-size:clamp(46px,8.2vw,158px)}
 .intro-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(40px,6vw,130px);margin-top:clamp(44px,4.5vw,80px)}
 .intro-body{grid-column:2}
@@ -620,7 +620,7 @@ form.sent .form-ok{display:block}
     </div>
   </section>
 
-  <section class="gate" aria-label="שני העולמות של ORBITA">
+  <section class="bridge wrap"><p class="eyebrow rv">ORBITA — סוכנות רכבי יוקרה ואספנות</p><h2 class="display bridge-title"><span class="ln"><span>מכל נקודה על פני</span></span><span class="ln"><span style="--d:.08s">כדור הארץ,</span></span><span class="ln"><span style="--d:.16s">עד החניה שלך.</span></span></h2></section><section class="gate" aria-label="שני העולמות של ORBITA">
     <div class="wrap gate-head">
       <p class="eyebrow rv">שני עולמות, מותג אחד</p>
     </div>
@@ -826,22 +826,6 @@ form.sent .form-ok{display:block}
     </div>
   </section>
 
-  <section class="intro wrap">
-    <p class="eyebrow rv">המוסך · ORBITA SERVICE</p>
-    <h1 class="display intro-title"><span class="ln"><span>כל רכב שנוחת אצלנו,</span></span><span class="ln"><span style="--d:.08s">עובר קודם כאן.</span></span></h1>
-    <div class="intro-grid">
-      <div class="intro-body">
-        <p class="lead rv" style="--d:.2s">מרכז שירות לרכבי יוקרה, ספורט ואספנות. אותם טכנאים שבודקים כל רכב לפני שהוא נמסר, מטפלים בו גם אחרי — עם ציוד האבחון של היצרנים, עמדות הרמה ייעודיות ודוח מצולם על כל עבודה.</p>
-        <a class="link-arrow rv" style="--d:.3s" href="#/workshop/book">לתיאום טיפול <span class="arr">←</span></a>
-      </div>
-    </div>
-    <div class="stats">
-      <div class="stat rv"><b data-count="160">0</b><span>נקודות בדיקה לכל רכב</span></div>
-      <div class="stat rv" style="--d:.1s"><b data-count="8">0</b><span>עמדות הרמה במוסך</span></div>
-      <div class="stat rv" style="--d:.2s"><b data-count="48">0</b><span>שעות — זמן ממוצע לטיפול מלא</span></div>
-    </div>
-  </section>
-
   <section class="ws-svc wrap">
     <div class="ws-svc-grid">
       <div class="ws-svc-list">
@@ -858,22 +842,6 @@ form.sent .form-ok{display:block}
       </div>
       <div class="ws-svc-media rv-img"><img data-img="ws_engine" alt="תא המנוע והמצננים של ריינג׳ רובר, מפורקים"></div>
     </div>
-  </section>
-
-  <section class="ws-proc wrap">
-    <div class="sec-head">
-      <div>
-        <p class="eyebrow rv">איך זה עובד</p>
-        <h2 class="h2"><span class="ln"><span>בלי לצאת מהבית.</span></span></h2>
-      </div>
-      <p class="lead rv" style="--d:.15s">אתם לא צריכים להגיע אלינו. אנחנו אוספים את הרכב, מעדכנים אתכם בכל שלב בוואטסאפ, ומחזירים אותו עד הדלת.</p>
-    </div>
-    <ol class="proc">
-      <li class="rv"><span class="pn">01</span><b>איסוף מהבית</b><p>נהג מטעמנו אוסף את הרכב בהובלה סגורה ומבוטחת.</p></li>
-      <li class="rv" style="--d:.08s"><span class="pn">02</span><b>אבחון ודוח מצולם</b><p>בדיקת 160 נקודות, ודוח עם תמונות ומחירים — ישר לוואטסאפ.</p></li>
-      <li class="rv" style="--d:.16s"><span class="pn">03</span><b>טיפול באישורכם</b><p>שום עבודה לא מתחילה בלי אישור שלכם, וכל חלק שהוחלף נשמר לכם.</p></li>
-      <li class="rv" style="--d:.24s"><span class="pn">04</span><b>החזרה עד הבית</b><p>הרכב חוזר רחוץ ומוכן לנסיעה, עם היסטוריית שירות מעודכנת.</p></li>
-    </ol>
   </section>
 
   <section class="book" id="book" aria-label="תיאום טיפול">
